@@ -30,6 +30,40 @@ export function resolveLanguageModel(settings: SDKModelSettings) {
     return providerInstance(modelId);
   }
 
+  if (provider === 'antigravity') {
+    // Antigravity Tools - OpenAI-compatible local gateway
+    // Port 8045, API key: sk-antigravity
+    const baseURL = 'http://127.0.0.1:8045/v1';
+    const antigravityProvider = createOpenAICompatible({
+      name: 'antigravity',
+      apiKey: 'sk-antigravity',
+      baseURL,
+    });
+    return antigravityProvider(modelId);
+  }
+
+  if (provider === 'max-router') {
+    // Anthropic Max Router - Claude Max subscription to API bridge
+    // Port 3001, uses Anthropic-compatible protocol
+    const baseURL = 'http://localhost:3001';
+    const maxRouterProvider = createAnthropic({
+      apiKey: 'dummy',
+      baseURL,
+    });
+    return maxRouterProvider(modelId);
+  }
+
+  if (provider === 'zai') {
+    // Z.AI (GLM) - OpenAI-compatible Chinese AI platform
+    const baseURL = 'https://api.z.ai/api/paas/v4';
+    const zaiProvider = createOpenAICompatible({
+      name: 'zai',
+      apiKey,
+      baseURL,
+    });
+    return zaiProvider(modelId);
+  }
+
   if (provider === 'kimi') {
     // Kimi is Anthropic-compatible (x-api-key + /v1/messages)
     // Also requires User-Agent header (enforced via declarativeNetRequest in background.ts)

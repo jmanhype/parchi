@@ -168,9 +168,71 @@ import { SidePanelUI } from './panel-ui.js';
     enableScreenshots: false,
   };
 
+  // Preset profiles for local and new providers
+  const presetConfigs = {
+    'Antigravity (Local)': {
+      provider: 'antigravity',
+      apiKey: 'sk-antigravity',
+      model: 'claude-sonnet-4-5',
+      customEndpoint: '',
+      systemPrompt: this.getDefaultSystemPrompt(),
+      temperature: 0.7,
+      maxTokens: 4096,
+      contextLimit: 200000,
+      timeout: 30000,
+      sendScreenshotsAsImages: false,
+      screenshotQuality: 'high',
+      showThinking: true,
+      streamResponses: true,
+      autoScroll: true,
+      confirmActions: true,
+      saveHistory: true,
+      enableScreenshots: false,
+    },
+    'Max Router (Local)': {
+      provider: 'max-router',
+      apiKey: 'dummy',
+      model: 'claude-sonnet-4-20250514',
+      customEndpoint: '',
+      systemPrompt: this.getDefaultSystemPrompt(),
+      temperature: 0.7,
+      maxTokens: 4096,
+      contextLimit: 200000,
+      timeout: 30000,
+      sendScreenshotsAsImages: false,
+      screenshotQuality: 'high',
+      showThinking: true,
+      streamResponses: true,
+      autoScroll: true,
+      confirmActions: true,
+      saveHistory: true,
+      enableScreenshots: false,
+    },
+    'Z.AI (GLM)': {
+      provider: 'zai',
+      apiKey: '1cd54a1d237e4693b516a56e8513366a.1r4gXJRbfYp0Nw52',
+      model: 'glm-4.7',
+      customEndpoint: '',
+      systemPrompt: this.getDefaultSystemPrompt(),
+      temperature: 0.7,
+      maxTokens: 4096,
+      contextLimit: 200000,
+      timeout: 30000,
+      sendScreenshotsAsImages: false,
+      screenshotQuality: 'high',
+      showThinking: true,
+      streamResponses: true,
+      autoScroll: true,
+      confirmActions: true,
+      saveHistory: true,
+      enableScreenshots: false,
+    },
+  };
+
   this.configs = {
     default: { ...baseConfig, ...(storedConfigs.default || {}) },
     ...storedConfigs,
+    ...presetConfigs,
   };
   this.currentConfig = this.configs[settings.activeConfig] ? settings.activeConfig : 'default';
   this.auxAgentProfiles = settings.auxAgentProfiles || [];
