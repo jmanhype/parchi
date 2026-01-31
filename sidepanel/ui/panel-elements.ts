@@ -76,7 +76,7 @@ export const getSidePanelElements = (): SidePanelElements => ({
   settingsTabProfiles: byId<HTMLElement>('settingsTabProfiles'),
   filesPanel: byId<HTMLElement>('filesPanel'),
   dropZone: byId<HTMLElement>('dropZone'),
-  fileInput: byId<HTMLInputElement>('fileInput'),
+  filesFileInput: byId<HTMLInputElement>('fileInput'),
   selectFilesBtn: byId<HTMLButtonElement>('selectFilesBtn'),
   fileListContainer: byId<HTMLElement>('fileListContainer'),
   fileList: byId<HTMLElement>('fileList'),

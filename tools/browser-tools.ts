@@ -653,16 +653,12 @@ export class BrowserTools {
 
           // Convert base64 data back to Blob
           const byteCharacters = atob(fileData.data);
-          const byteArrays = [];
-          for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-            const slice = byteCharacters.slice(offset, offset + 512);
-            const byteNumbers = new Array(slice.length);
-            for (let i = 0; i < slice.length; i++) {
-              byteNumbers[i] = slice.charCodeAt(i);
-            }
-            byteArrays.push(new Uint8Array(byteNumbers));
+          const byteNumbers: number[] = [];
+          for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
           }
-          const blob = new Blob(byteArrays, { type: fileData.type });
+          const byteArray = new Uint8Array(byteNumbers);
+          const blob = new Blob([byteArray], { type: fileData.type });
           const file = new File([blob], fileData.name, { type: fileData.type });
 
           // Create DataTransfer and assign file

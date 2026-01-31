@@ -185,6 +185,10 @@ app.get('/health', (req, res) => {
   res.json({ ok: true });
 });
 
+app.get('/', (req, res) => {
+  res.redirect('/health');
+});
+
 app.get('/device', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/device.html'));
 });

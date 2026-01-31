@@ -1,0 +1,28 @@
+#!/bin/bash
+# Convenience wrapper for running browser-use scripts with Python 3.11.7
+
+PYTHON311=~/.pyenv/versions/3.11.7/bin/python3
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+case "$1" in
+    twitter|fb|facebook|upload)
+        $PYTHON311 "$SCRIPT_DIR/browser-file-upload.py"
+        ;;
+    test|demo)
+        $PYTHON311 "$SCRIPT_DIR/browser-use-chrome.py"
+        ;;
+    *)
+        echo "Browser automation with Chrome profile"
+        echo ""
+        echo "Usage: browser-run <command>"
+        echo ""
+        echo "Commands:"
+        echo "  test, demo    - Run test/demo script"
+        echo "  upload        - Run file upload script"
+        echo "  twitter       - Upload to Twitter (via upload script)"
+        echo "  fb, facebook  - Upload to Facebook (via upload script)"
+        echo ""
+        echo "Example:"
+        echo "  ./browser-run demo"
+        ;;
+esac

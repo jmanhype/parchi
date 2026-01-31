@@ -10,10 +10,10 @@ import { SidePanelUI } from './panel-ui.js';
  * Setup file panel event listeners
  */
 (SidePanelUI.prototype as any).setupFilePanelListeners = function setupFilePanelListeners(this: SidePanelUI) {
-  const { dropZone, fileInput, selectFilesBtn, clearAllBtn } = this.elements;
+  const { dropZone, filesFileInput, selectFilesBtn, clearAllBtn } = this.elements;
 
   // File input change
-  fileInput?.addEventListener('change', async (e) => {
+  filesFileInput?.addEventListener('change', async (e) => {
     const target = e.target as HTMLInputElement;
     const files = target.files;
     if (files) {
@@ -24,7 +24,7 @@ import { SidePanelUI } from './panel-ui.js';
 
   // Select files button
   selectFilesBtn?.addEventListener('click', () => {
-    fileInput?.click();
+    filesFileInput?.click();
   });
 
   // Drag and drop
@@ -41,7 +41,7 @@ import { SidePanelUI } from './panel-ui.js';
     e.preventDefault();
     dropZone.classList.remove('drag-over');
 
-    const files = Array.from(e.dataTransfer?.files || []);
+    const files = Array.from(e.dataTransfer?.files || []) as File[];
     await handleFiles.call(this, files);
   });
 
@@ -49,14 +49,14 @@ import { SidePanelUI } from './panel-ui.js';
   clearAllBtn?.addEventListener('click', async () => {
     if (confirm('Are you sure you want to remove all files?')) {
       await fileStorage.clearAllFiles();
-      loadFileList.call(this);
+      (this as any).loadFileList();
     }
   });
 
   // Listen for custom event to refresh list
   const filesPanel = document.getElementById('filesPanel');
   filesPanel?.addEventListener('loadFileList', () => {
-    loadFileList.call(this);
+    (this as any).loadFileList();
   });
 };
 
@@ -75,7 +75,7 @@ async function handleFiles(this: SidePanelUI, files: File[]) {
   }
 
   // Refresh the file list
-  loadFileList.call(this);
+  (this as any).loadFileList();
 }
 
 /**
@@ -149,7 +149,7 @@ function createFileItem(this: SidePanelUI, file: fileStorage.StoredFile): HTMLEl
   removeBtn?.addEventListener('click', async () => {
     await fileStorage.deleteFile(file.id);
     // Refresh the list
-    loadFileList.call(this);
+    (this as any).loadFileList();
   });
 
   return item;
