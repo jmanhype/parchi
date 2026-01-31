@@ -1,4 +1,5 @@
 import { SidePanelUI } from './panel-ui.js';
+import * as fileStorage from '../services/file-storage.js';
 
 (SidePanelUI.prototype as any).handleFileSelection = async function handleFileSelection(event: Event) {
   const input = event.target as HTMLInputElement | null;
@@ -6,19 +7,69 @@ import { SidePanelUI } from './panel-ui.js';
   const files = Array.from(input.files || []) as File[];
   if (!files.length) return;
 
-  const maxPerFile = 4000;
+  // Store all files in IndexedDB
   for (const file of files) {
     try {
-      const text = await file.text();
-      const trimmed = text.length > maxPerFile ? text.slice(0, maxPerFile) + '\n… (truncated)' : text;
-      const prefix = `\n\n[File: ${file.name}]\n`;
-      this.elements.userInput.value += prefix + trimmed;
-    } catch (e) {
-      console.warn('Failed to read file', file.name, e);
+      await fileStorage.storeFile(file);
+      console.log('[Files] Stored file:', file.name, fileStorage.formatBytes(file.size));
+      // Show inline attachment bubble
+      this.addFileAttachmentBubble(file);
+    } catch (error) {
+      console.error('[Files] Failed to store file:', file.name, error);
+      alert(`Failed to attach ${file.name}: ${error}`);
     }
   }
+
   input.value = '';
   this.elements.userInput.focus();
+};
+
+// Add inline file attachment bubble (ChatGPT-style)
+(SidePanelUI.prototype as any).addFileAttachmentBubble = function addFileAttachmentBubble(file: File) {
+  const chatMessages = this.elements.chatMessages;
+  if (!chatMessages) return;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'message attachment-bubble';
+  bubble.dataset.fileName = file.name;
+
+  const icon = this.getFileIconForMimeType(file.type);
+  const sizeStr = fileStorage.formatBytes(file.size);
+
+  bubble.innerHTML = `
+    <div class="attachment-content">
+      <span class="attachment-icon">${icon}</span>
+      <span class="attachment-name">${file.name}</span>
+      <span class="attachment-size">${sizeStr}</span>
+      <button class="attachment-remove" title="Remove file">×</button>
+    </div>
+  `;
+
+  // Add remove handler
+  const removeBtn = bubble.querySelector('.attachment-remove');
+  removeBtn?.addEventListener('click', async () => {
+    // Find the file in storage and remove it
+    const files = await fileStorage.listFiles();
+    const storedFile = files.find(f => f.name === file.name);
+    if (storedFile) {
+      await fileStorage.deleteFile(storedFile.id);
+    }
+    bubble.remove();
+  });
+
+  // Add to chat (before any input area)
+  const inputArea = this.elements.composer;
+  inputArea?.parentNode?.insertBefore(bubble, inputArea);
+};
+
+// Get file icon for MIME type
+(SidePanelUI.prototype as any).getFileIconForMimeType = function getFileIconForMimeType(mimeType: string): string {
+  if (mimeType.startsWith('image/')) return '🖼️';
+  if (mimeType.startsWith('video/')) return '🎬';
+  if (mimeType.startsWith('audio/')) return '🎵';
+  if (mimeType.includes('pdf')) return '📄';
+  if (mimeType.includes('zip') || mimeType.includes('rar')) return '📦';
+  return '📎';
 };
 
 (SidePanelUI.prototype as any).toggleTabSelector = async function toggleTabSelector() {
