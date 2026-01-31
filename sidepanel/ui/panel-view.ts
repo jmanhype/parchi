@@ -32,13 +32,13 @@ import { SidePanelUI } from './panel-ui.js';
 };
 
 (SidePanelUI.prototype as any).showRightPanel = function showRightPanel(
-  panelName: 'history' | 'settings' | 'account' | null,
+  panelName: 'history' | 'files' | 'settings' | 'account' | null,
 ) {
   showRightPanelContent(this.elements, panelName);
 };
 
 (SidePanelUI.prototype as any).setNavActive = function setNavActive(
-  navName: 'chat' | 'history' | 'settings' | 'account',
+  navName: 'chat' | 'history' | 'files' | 'settings' | 'account',
 ) {
   updateNavActive(this.elements, navName);
 };
@@ -79,6 +79,16 @@ import { SidePanelUI } from './panel-ui.js';
   this.showRightPanel('account');
   this.setNavActive('account');
   this.updateAccessUI();
+};
+
+(SidePanelUI.prototype as any).openFilesPanel = function openFilesPanel() {
+  this.settingsOpen = false;
+  this.accessPanelVisible = false;
+  this.openSidebar();
+  this.showRightPanel('files');
+  this.setNavActive('files');
+  this.updateAccessUI();
+  this.loadFileList(); // Load files when opening panel
 };
 
 (SidePanelUI.prototype as any).startNewSession = function startNewSession() {

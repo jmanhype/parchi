@@ -33,6 +33,7 @@ import { SidePanelUI } from './panel-ui.js';
     onClose: () => this.closeSidebar(),
     onChat: () => this.openChatView(),
     onHistory: () => this.openHistoryPanel(),
+    onFiles: () => this.openFilesPanel(),
     onSettings: () => this.openSettingsPanel(),
     onAccount: () => this.openAccountPanel(),
   });
@@ -203,6 +204,9 @@ import { SidePanelUI } from './panel-ui.js';
     }
   });
   this.elements.saveProfileBtn?.addEventListener('click', () => this.saveProfileEdits());
+
+  // Files panel
+  this.setupFilePanelListeners?.();
 
   // Listen for messages from background
   chrome.runtime.onMessage.addListener((message) => {

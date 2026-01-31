@@ -1,7 +1,7 @@
 import type { SidePanelElements } from './panel-elements.js';
 
-export type RightPanelName = 'history' | 'settings' | 'account' | null;
-export type NavName = 'chat' | 'history' | 'settings' | 'account';
+export type RightPanelName = 'history' | 'files' | 'settings' | 'account' | null;
+export type NavName = 'chat' | 'history' | 'files' | 'settings' | 'account';
 
 const PANEL_SELECTOR = '.right-panel-content';
 
@@ -47,6 +47,7 @@ export const showRightPanel = (elements: SidePanelElements, panelName: RightPane
 export const updateNavActive = (elements: SidePanelElements, navName: NavName) => {
   elements.navChatBtn?.classList.remove('active');
   elements.navHistoryBtn?.classList.remove('active');
+  elements.navFilesBtn?.classList.remove('active');
   elements.navSettingsBtn?.classList.remove('active');
   elements.navAccountBtn?.classList.remove('active');
 
@@ -56,6 +57,9 @@ export const updateNavActive = (elements: SidePanelElements, navName: NavName) =
       break;
     case 'history':
       elements.navHistoryBtn?.classList.add('active');
+      break;
+    case 'files':
+      elements.navFilesBtn?.classList.add('active');
       break;
     case 'settings':
       elements.navSettingsBtn?.classList.add('active');
@@ -71,6 +75,7 @@ type NavigationHandlers = {
   onClose: () => void;
   onChat: () => void;
   onHistory: () => void;
+  onFiles: () => void;
   onSettings: () => void;
   onAccount: () => void;
 };
@@ -81,6 +86,7 @@ export const bindSidebarNavigation = (elements: SidePanelElements, handlers: Nav
     closeSidebarBtn: !!elements.closeSidebarBtn,
     navChatBtn: !!elements.navChatBtn,
     navHistoryBtn: !!elements.navHistoryBtn,
+    navFilesBtn: !!elements.navFilesBtn,
     navSettingsBtn: !!elements.navSettingsBtn,
     navAccountBtn: !!elements.navAccountBtn,
     rightPanelPanels: !!elements.rightPanelPanels,
@@ -100,12 +106,16 @@ export const bindSidebarNavigation = (elements: SidePanelElements, handlers: Nav
     }
   });
   elements.closeSidebarBtn?.addEventListener('click', handlers.onClose);
-  
+
   // Bind nav buttons
   elements.navChatBtn?.addEventListener('click', handlers.onChat);
   elements.navHistoryBtn?.addEventListener('click', () => {
     console.log('[Navigation] navHistoryBtn clicked!');
     handlers.onHistory();
+  });
+  elements.navFilesBtn?.addEventListener('click', () => {
+    console.log('[Navigation] navFilesBtn clicked!');
+    handlers.onFiles();
   });
   elements.navSettingsBtn?.addEventListener('click', handlers.onSettings);
   elements.navAccountBtn?.addEventListener('click', handlers.onAccount);

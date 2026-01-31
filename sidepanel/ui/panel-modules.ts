@@ -4,6 +4,7 @@ import './panel-agents.js';
 import './panel-chat.js';
 import './panel-context.js';
 import './panel-core.js';
+import './panel-files.js';
 import './panel-helpers.js';
 import './panel-history.js';
 import './panel-markdown.js';

@@ -41,6 +41,8 @@ export class BrowserTools {
       scroll: true,
       getContent: true,
       screenshot: true,
+      uploadFile: true,
+      listFiles: true,
       getTabs: true,
       closeTab: true,
       switchTab: true,
@@ -201,6 +203,27 @@ export class BrowserTools {
         },
       },
       {
+        name: 'uploadFile',
+        description: 'Upload a file to a file input element on the page. Files must be added via the Files tab first.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            fileName: { type: 'string', description: 'Name of the file to upload (must exist in Files tab).' },
+            selector: { type: 'string', description: 'CSS selector for the file input element (defaults to input[type="file"]).' },
+            tabId: { type: 'number', description: 'Optional tab id.' },
+          },
+          required: ['fileName'],
+        },
+      },
+      {
+        name: 'listFiles',
+        description: 'List all files stored in the Files tab.',
+        input_schema: {
+          type: 'object',
+          properties: {},
+        },
+      },
+      {
         name: 'describeSessionTabs',
         description: 'List tabs captured for this session.',
         input_schema: {
@@ -296,7 +319,11 @@ export class BrowserTools {
           maxTabs: MAX_SESSION_TABS,
           canOpenMore: this.sessionTabs.size < MAX_SESSION_TABS,
         };
-        default:
+      case 'uploadFile':
+        return await this.uploadFile(args);
+      case 'listFiles':
+        return await this.listFiles();
+      default:
           return { success: false, error: `Unknown tool: ${toolName}` };
       }
     } catch (error) {
@@ -582,5 +609,187 @@ export class BrowserTools {
         color: options.color,
       });
     }
+  }
+
+  /**
+   * Upload a stored file to a file input element
+   */
+  private async uploadFile(args: Record<string, any>) {
+    const fileName = args.fileName;
+    if (!fileName || typeof fileName !== 'string') {
+      return { success: false, error: 'Missing or invalid fileName parameter.' };
+    }
+
+    // Get file from IndexedDB (shared with sidepanel)
+    const file = await this.getFileFromStorage(fileName);
+    if (!file) {
+      return {
+        success: false,
+        error: `File "${fileName}" not found. Please add it via the Files tab first.`,
+        hint: 'Use the Files tab to add files before uploading them.',
+      };
+    }
+
+    const tabId = await this.resolveTabId(args);
+    if (!tabId) return { success: false, error: 'No active tab.' };
+
+    // Find the file input element
+    const selector = args.selector || 'input[type="file"]';
+
+    // Inject file into the page
+    const result = await this.runInTab(
+      tabId,
+      async (sel, fileData: { name: string; type: string; data: string }) => {
+        try {
+          // Find file input
+          const fileInput = document.querySelector<HTMLInputElement>(sel);
+          if (!fileInput) {
+            return {
+              success: false,
+              error: `File input not found with selector: ${sel}`,
+              hint: 'Try a different selector or check if the page has loaded completely.',
+            };
+          }
+
+          // Convert base64 data back to Blob
+          const byteCharacters = atob(fileData.data);
+          const byteArrays = [];
+          for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+            const slice = byteCharacters.slice(offset, offset + 512);
+            const byteNumbers = new Array(slice.length);
+            for (let i = 0; i < slice.length; i++) {
+              byteNumbers[i] = slice.charCodeAt(i);
+            }
+            byteArrays.push(new Uint8Array(byteNumbers));
+          }
+          const blob = new Blob(byteArrays, { type: fileData.type });
+          const file = new File([blob], fileData.name, { type: fileData.type });
+
+          // Create DataTransfer and assign file
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          fileInput.files = dataTransfer.files;
+
+          // Trigger events to notify the page
+          fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+          fileInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+          return {
+            success: true,
+            fileName: fileData.name,
+            fileSize: file.size,
+            fileType: fileData.type,
+          };
+        } catch (error) {
+          return {
+            success: false,
+            error: `File upload failed: ${error?.message || String(error)}`,
+          };
+        }
+      },
+      [selector, { name: file.name, type: file.type, data: file.data }],
+    );
+
+    return result || { success: false, error: 'Script execution failed.' };
+  }
+
+  /**
+   * List all stored files
+   */
+  private async listFiles() {
+    try {
+      const files = await this.getAllFilesFromStorage();
+      return {
+        success: true,
+        files: files.map((f) => ({
+          name: f.name,
+          type: f.type,
+          size: f.size,
+          createdAt: f.createdAt,
+        })),
+        count: files.length,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to list files: ${error?.message || String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * Get a file from storage by name (converts Blob to base64 for injection)
+   */
+  private async getFileFromStorage(fileName: string): Promise<{ name: string; type: string; data: string } | null> {
+    return new Promise((resolve) => {
+      const request = indexedDB.open('parchi_files', 1);
+
+      request.onerror = () => resolve(null);
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction(['files'], 'readonly');
+        const store = transaction.objectStore('files');
+        const index = store.index('name');
+        const getReq = index.get(fileName);
+
+        getReq.onsuccess = async () => {
+          const storedFile = getReq.result;
+          if (!storedFile) {
+            db.close();
+            resolve(null);
+            return;
+          }
+
+          // Convert Blob to base64 for passing to content script
+          const reader = new FileReader();
+          reader.onload = () => {
+            db.close();
+            resolve({
+              name: storedFile.name,
+              type: storedFile.type,
+              data: (reader.result as string).split(',')[1], // Remove data: prefix
+            });
+          };
+          reader.onerror = () => {
+            db.close();
+            resolve(null);
+          };
+          reader.readAsDataURL(storedFile.data);
+        };
+
+        getReq.onerror = () => {
+          db.close();
+          resolve(null);
+        };
+      };
+    });
+  }
+
+  /**
+   * Get all files from storage
+   */
+  private async getAllFilesFromStorage(): Promise<Array<{ name: string; type: string; size: number; createdAt: number }>> {
+    return new Promise((resolve) => {
+      const request = indexedDB.open('parchi_files', 1);
+
+      request.onerror = () => resolve([]);
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction(['files'], 'readonly');
+        const store = transaction.objectStore('files');
+        const getReq = store.getAll();
+
+        getReq.onsuccess = () => {
+          db.close();
+          const files = getReq.result || [];
+          resolve(files);
+        };
+
+        getReq.onerror = () => {
+          db.close();
+          resolve([]);
+        };
+      };
+    });
   }
 }
